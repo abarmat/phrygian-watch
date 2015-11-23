@@ -1,9 +1,22 @@
 import os.path
-import requests
+import grequests
 
 from pymongo import MongoClient
 
-chunk_size = 1024 ** 2
+
+DOWNLOADERS_NUM = 20
+
+
+def handle_response(doc_id, url, filename):
+    def do(r, **kwargs):
+        with open(filename, 'wb') as fd:
+            fd.write(r.raw.read())
+        print '[W] : {} - {}'.format(doc_id, url)
+    return do
+
+
+def filename_from_id(doc_id):
+    return 'data/' + doc_id + '.' + 'pdf'
 
 
 def main():
@@ -11,20 +24,25 @@ def main():
     client = MongoClient()
     db = client.ean2015
  
-    # Get files
+    rs = []
+
+    # Prepare files to download 
     for doc in db.docs.find():
-        filename = 'data/' + doc['docid'] + '.' + 'pdf'
+        doc_id = doc['docid']
+        filename = filename_from_id(doc_id) 
 
         if not os.path.isfile(filename):
             url = doc['url'].replace('.htm', '.pdf')
-            print '[D] : {} - {}'.format(doc['docid'], url)
-            r = requests.get(url, stream=True)
-
-            with open(filename, 'wb') as fd:
-                for chunk in r.iter_content(chunk_size):
-                    fd.write(chunk)
+            r = grequests.get(url, hooks=dict(response=handle_response(doc_id, url, filename)))
+            rs.append(r)
+            print '[D] : {} - {}'.format(doc_id, url)
         else:
-            print '[I] : {}'.format(doc['docid'])
+            print '[I] : {}'.format(doc_id)
+        
+        if len(rs) == DOWNLOADERS_NUM:
+            grequests.map(rs, size=DOWNLOADERS_NUM)
+            rs = []
+ 
 
 if __name__ == '__main__':
     main()
