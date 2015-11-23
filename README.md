@@ -1,5 +1,9 @@
 # phrygian-watch
 
+## Goal
+
+The aim of phrygian-watch is to digitally oversee the election process of democracies around the world.
+
 ## Requirements
 * Scrapy: http://scrapy.org/
 * grequests: https://github.com/kennethreitz/grequests
@@ -22,3 +26,4 @@ Run `scrapy list` to list available scrappers.
 `mongoimport --db ean2015 --collection docs dump.json`
 
 3) Download the actual docs in pdf format with the downloader located within the extras folder `python downloader.py`. This script will place a /data folder where it's run with the files named according to the format defined by the site.
+
