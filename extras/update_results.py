@@ -13,13 +13,20 @@ def parse_doc(doc_id):
             row_macri = root.xpath('.//th[text()="CAMBIEMOS "]')[0]
             row_nulo = root.xpath('.//th[text()="Votos nulos"]')[0]
             row_blanco = root.xpath('.//th[text()="Votos en blanco"]')[0]
+            row_recurrido = root.xpath('.//th[text()="Votos recurridos"]')[0]
+            row_impugnado = root.xpath('.//th[text()="Votos impugnados"]')[0]
+            row_estado = root.xpath('.//th[text()="Estado"]')[0]
 
             db.docs.update_one(
                 {"docid": doc_id},
                 {"$set": {
-                    "macri": int(row_macri.getnext().text),
-                    "scioli": int(row_scioli.getnext().text),
-                    "blanco": int(row_nulo.getnext().text) + int(row_blanco.getnext().text)
+                    "votos_macri": int(row_macri.getnext().text),
+                    "votos_scioli": int(row_scioli.getnext().text),
+                    "votos_nulos": int(row_nulo.getnext().text),
+                    "votos_blancos": int(row_blanco.getnext().text),
+                    "votos_recurridos": int(row_recurrido.getnext().text),
+                    "votos_impugnados": int(row_impugnado.getnext().text),
+                    "estado": row_estado.getnext().text
                 }}
             )
             print 'OK', doc_id
