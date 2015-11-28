@@ -6,10 +6,10 @@ from scrapy.loader.processors import TakeFirst
 from phrygianwatch.items import TelegramaItem
 
 
-# Elecciones Argentinas Nacionales (Balotage) 2015
+# Elecciones Argentinas Nacionales (Ballotage) 2015
 
-class EAN2015BalotageSpider(scrapy.Spider):
-    name = "ean2015balotage"
+class EAN2015BallotageSpider(scrapy.Spider):
+    name = "ean2015ballotage"
     allowed_domains = ["resultados.gob.ar"]
     start_urls = (
         'http://www.resultados.gob.ar/bltgetelegr/IPRO.htm',
@@ -31,21 +31,30 @@ class EAN2015BalotageSpider(scrapy.Spider):
             yield scrapy.Request(url, callback=self.parse_mesa)
     
     def parse_mesa(self, response):
-        for e in response.css('a[target="caja_pdf"]'):
-            # Select relevant info
-            href = TakeFirst()(e.css('a::attr("href")').extract())
-            name = TakeFirst()(e.xpath('text()').extract())
-            
-            # Create item
-            item = TelegramaItem()
-            item['url'] = response.urljoin(href)
-            item['mesa'] = name
+        for href in response.css('a[target="caja_pdf"]::attr("href")').extract():
+            url = response.urljoin(href)
+            yield scrapy.Request(url, callback=self.parse_telegrama)
 
-            tokens = item['url'].split('/')            
-            item['docid'] = tokens[-1].replace('.htm', '')
-            item['circuito'] = tokens[-2]
-            item['seccion'] = tokens[-3]
-            item['provincia'] = tokens[-4]
-            item['created_at'] = str(datetime.utcnow())
-            
-            yield item
+    def parse_telegrama(self, response):
+        # Create item
+        item = TelegramaItem()
+        tokens = response.url.split('/')
+
+        item['url'] = response.url
+        item['pdf'] = item['url'].replace('htm', 'pdf')
+        item['mesa'] = response.css('.cabmesa + td::text')[0].extract()
+        item['docid'] = tokens[-1].replace('.htm', '')
+        item['circuito'] = tokens[-2]
+        item['seccion'] = tokens[-3]
+        item['provincia'] = tokens[-4]
+        item['created_at'] = str(datetime.utcnow())
+
+        item['votos_scioli'] = int(response.css('#TVOTOS tbody tr:nth-child(1) td::text')[0].extract())
+        item['votos_macri'] = int(response.css('#TVOTOS tbody tr:nth-child(2) td::text')[0].extract())
+        item['votos_nulos'] = int(response.css('.pt1 tbody tr:nth-child(1) td::text')[0].extract())
+        item['votos_blancos'] = int(response.css('.pt1 tbody tr:nth-child(2) td::text')[0].extract())
+        item['votos_recurridos'] = int(response.css('.pt1 tbody tr:nth-child(3) td::text')[0].extract())
+        item['votos_impugnados'] = int(response.css('.pt2 tbody td::text')[0].extract())
+
+        yield item
+

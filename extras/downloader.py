@@ -32,7 +32,7 @@ def main():
         filename = filename_from_id(doc_id) 
 
         if not os.path.isfile(filename):
-            url = doc['url'].replace('.htm', '.pdf')
+            url = doc['pdf']
             r = grequests.get(url, hooks=dict(response=handle_response(doc_id, url, filename)))
             rs.append(r)
             print '[D] : {} - {}'.format(doc_id, url)
